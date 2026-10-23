@@ -1,0 +1,11 @@
+name = "instagram-automation-api"
+main = "src/index.js"
+compatibility_date = "2024-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ACCOUNT_USERNAME = "digiperformellenabad"
+ACCOUNT_ID = "17841476577468368"
+GRAPH_API_VERSION = "v21.0"
+TURSO_URL = "libsql://sal-instagram-dakshisoffline.aws-ap-south-1.turso.io"
+WEBHOOK_VERIFY_TOKEN = "digiperform_auto_verify_2026"
