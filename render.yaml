@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: brightbean-web
+    name: brightbean-studio
     runtime: docker
+    plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health/
-    preDeployCommand: "python manage.py migrate"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.production
@@ -25,33 +25,3 @@ services:
       - key: PLATFORM_INSTAGRAM_APP_SECRET
         value: "a5885b03f36e8bba42cb90d55dccdeab"
 
-  - type: worker
-    name: brightbean-worker
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    dockerCommand: python manage.py run_studio_worker
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
-      - key: SECRET_KEY
-        fromService:
-          name: brightbean-web
-          type: web
-          envVarKey: SECRET_KEY
-      - key: ENCRYPTION_KEY_SALT
-        fromService:
-          name: brightbean-web
-          type: web
-          envVarKey: ENCRYPTION_KEY_SALT
-      - key: TURSO_URL
-        fromService:
-          name: brightbean-web
-          type: web
-          envVarKey: TURSO_URL
-      - key: TURSO_AUTH_TOKEN
-        fromService:
-          name: brightbean-web
-          type: web
-          envVarKey: TURSO_AUTH_TOKEN
-      - key: STORAGE_BACKEND
-        value: local
