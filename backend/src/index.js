@@ -172,6 +172,7 @@ export default {
                     if (matchedRule.direct_message) {
                       await sendInstagramDM({
                         commentId,
+                        recipientId: commenterId,
                         directMessage: matchedRule.direct_message,
                         buttonsJson: matchedRule.buttons,
                         token

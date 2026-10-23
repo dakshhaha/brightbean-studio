@@ -34,8 +34,108 @@ export async function sendInstagramDM({ recipientId, commentId = null, directMes
   const urlButtons = buttons.filter(b => b.type === 'web_url' && b.url && b.title);
   const quickReplies = buttons.filter(b => b.type === 'quick_reply' && b.title);
 
-  // 1. Private Reply to a Comment (Bypasses 24h standard window)
+  // Format buttons up to Meta's 3-button limit with max 20-character titles
+  const formattedButtons = urlButtons.slice(0, 3).map(b => ({
+    type: 'web_url',
+    url: String(b.url).trim(),
+    title: String(b.title).trim().substring(0, 20)
+  }));
+
+  // Build structured template payloads
+  const buttonTemplatePayload = formattedButtons.length > 0 ? {
+    attachment: {
+      type: 'template',
+      payload: {
+        template_type: 'button',
+        text: (directMessage || 'Please select an option below:').substring(0, 640),
+        buttons: formattedButtons
+      }
+    }
+  } : null;
+
+  const genericTemplatePayload = formattedButtons.length > 0 ? {
+    attachment: {
+      type: 'template',
+      payload: {
+        template_type: 'generic',
+        elements: [
+          {
+            title: (directMessage || 'Click an option below:').substring(0, 80),
+            subtitle: directMessage && directMessage.length > 80 ? directMessage.substring(80, 160) : 'Tap a button below to get started',
+            buttons: formattedButtons
+          }
+        ]
+      }
+    }
+  } : null;
+
+  // 1. Private Reply to a Comment (via comment_id)
   if (commentId) {
+    // If the rule has interactive buttons, send as Button Template or Generic Template
+    if (formattedButtons.length > 0) {
+      // Strategy A: Send Button Template via comment_id
+      try {
+        const res = await fetch(`${GRAPH_BASE}/me/messages?access_token=${encodeURIComponent(token)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient: { comment_id: commentId },
+            message: buttonTemplatePayload
+          })
+        });
+        const data = await res.json();
+        if (data && (data.message_id || data.recipient_id) && !data.error) {
+          console.log('[Instagram] Button Template sent successfully via comment_id:', data);
+          return data;
+        }
+        console.warn('[Instagram] Button template with comment_id notice:', data.error);
+      } catch (err) {
+        console.warn('[Instagram] Button template error:', err);
+      }
+
+      // Strategy B: Send Generic Template via comment_id
+      try {
+        const res = await fetch(`${GRAPH_BASE}/me/messages?access_token=${encodeURIComponent(token)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient: { comment_id: commentId },
+            message: genericTemplatePayload
+          })
+        });
+        const data = await res.json();
+        if (data && (data.message_id || data.recipient_id) && !data.error) {
+          console.log('[Instagram] Generic Template sent successfully via comment_id:', data);
+          return data;
+        }
+        console.warn('[Instagram] Generic template with comment_id notice:', data.error);
+      } catch (err) {
+        console.warn('[Instagram] Generic template error:', err);
+      }
+
+      // Strategy C: If recipientId (commenter IGSID) is available, send template directly
+      if (recipientId) {
+        try {
+          const res = await fetch(`${GRAPH_BASE}/me/messages?access_token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              recipient: { id: recipientId },
+              message: genericTemplatePayload || buttonTemplatePayload
+            })
+          });
+          const data = await res.json();
+          if (data && (data.message_id || data.recipient_id) && !data.error) {
+            console.log('[Instagram] Direct template sent successfully to recipientId:', data);
+            return data;
+          }
+        } catch (err) {
+          console.warn('[Instagram] Direct template error:', err);
+        }
+      }
+    }
+
+    // Strategy D (Fallback if Meta rejects templates on the specific comment): Plain text
     let dmText = directMessage || 'Thanks for reaching out!';
     if (urlButtons.length > 0) {
       dmText += '\n\n' + urlButtons.map(b => `${b.title}: ${b.url}`).join('\n');
@@ -55,21 +155,8 @@ export async function sendInstagramDM({ recipientId, commentId = null, directMes
   // 2. Standard Inbox Direct Message (Inside 24h window)
   let messagePayload = { text: directMessage || 'Thanks for reaching out!' };
 
-  if (urlButtons.length > 0) {
-    messagePayload = {
-      attachment: {
-        type: 'template',
-        payload: {
-          template_type: 'button',
-          text: directMessage || 'Please select an option below:',
-          buttons: urlButtons.slice(0, 3).map(b => ({
-            type: 'web_url',
-            url: b.url,
-            title: b.title.substring(0, 20)
-          }))
-        }
-      }
-    };
+  if (buttonTemplatePayload) {
+    messagePayload = buttonTemplatePayload;
   } else if (quickReplies.length > 0) {
     messagePayload = {
       text: directMessage,
