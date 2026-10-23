@@ -49,7 +49,12 @@ def calculate_engagement_rate(engagements: float, views: float | None = None, re
     return round((float(engagements) / denominator) * 100, 2)
 
 
-def _split[T](values: list[T], days: int) -> tuple[list[T], list[T]]:
+from typing import TypeVar
+
+T = TypeVar("T")
+
+
+def _split(values: list[T], days: int) -> tuple[list[T], list[T]]:
     """Return (current, previous) windows of ``days`` length, latest-last."""
     if not values:
         return [], []

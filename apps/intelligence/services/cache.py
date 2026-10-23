@@ -10,9 +10,12 @@ no Redis dependency, no stale-cache problems.
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import TypeVar
+
+T = TypeVar("T")
 
 
-def per_request_cache[T](request, key: tuple, producer: Callable[[], T]) -> T:
+def per_request_cache(request, key: tuple, producer: Callable[[], T]) -> T:
     """Return ``producer()`` once per request for the given key.
 
     ``key`` is a tuple of stable identifiers (e.g. ``(org_id, "me")``).

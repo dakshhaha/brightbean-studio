@@ -12,14 +12,18 @@ services:
         generateValue: true
       - key: ENCRYPTION_KEY_SALT
         generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: brightbean-db
-          property: connectionString
+      - key: TURSO_URL
+        value: "https://sal-instagram-dakshisoffline.aws-ap-south-1.turso.io"
+      - key: TURSO_AUTH_TOKEN
+        sync: false
       - key: ALLOWED_HOSTS
         value: "*"
       - key: STORAGE_BACKEND
-        value: s3
+        value: local
+      - key: PLATFORM_INSTAGRAM_APP_ID
+        value: "1586487600189525"
+      - key: PLATFORM_INSTAGRAM_APP_SECRET
+        value: "a5885b03f36e8bba42cb90d55dccdeab"
 
   - type: worker
     name: brightbean-worker
@@ -39,13 +43,15 @@ services:
           name: brightbean-web
           type: web
           envVarKey: ENCRYPTION_KEY_SALT
-      - key: DATABASE_URL
-        fromDatabase:
-          name: brightbean-db
-          property: connectionString
+      - key: TURSO_URL
+        fromService:
+          name: brightbean-web
+          type: web
+          envVarKey: TURSO_URL
+      - key: TURSO_AUTH_TOKEN
+        fromService:
+          name: brightbean-web
+          type: web
+          envVarKey: TURSO_AUTH_TOKEN
       - key: STORAGE_BACKEND
-        value: s3
-
-databases:
-  - name: brightbean-db
-    plan: free
+        value: local

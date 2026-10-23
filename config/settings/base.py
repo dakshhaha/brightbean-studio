@@ -164,10 +164,31 @@ else:
         },
     }
 
-# Database
-DATABASES = {
-    "default": env.db("DATABASE_URL", default="postgres://postgres:postgres@localhost:5432/brightbean"),
-}
+# Database (Supports Turso libSQL over HTTP or standard relational backends)
+TURSO_DB_URL = env("TURSO_DB_URL", default=env("TURSO_URL", default=""))
+TURSO_AUTH_TOKEN = env("TURSO_AUTH_TOKEN", default="")
+
+if TURSO_DB_URL:
+    # Convert libsql:// to https:// for standard libSQL HTTP transport
+    if TURSO_DB_URL.startswith("libsql://"):
+        _turso_http_url = "https://" + TURSO_DB_URL[len("libsql://"):]
+    else:
+        _turso_http_url = TURSO_DB_URL
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django_libsql",
+            "NAME": _turso_http_url,
+            "AUTH_TOKEN": TURSO_AUTH_TOKEN,
+            "OPTIONS": {
+                "timeout": 30,
+            },
+        }
+    }
+else:
+    DATABASES = {
+        "default": env.db("DATABASE_URL", default="sqlite:///db.sqlite3"),
+    }
 
 # Custom user model
 AUTH_USER_MODEL = "accounts.User"
